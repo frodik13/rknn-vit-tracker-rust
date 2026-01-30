@@ -1,0 +1,18 @@
+[package]
+name = "vit_tracker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ndarray = "0.17"
+ndarray-stats = "0.7.0"
+num-traits = "0.2"
+thiserror = "2.0.18"
+bytemuck = { version = "1.14", features = ["derive"] }
+rknn-rs = { path = "../../rknn-rs/rknn-rs" }
+
+opencv = { version = "0.98.1", features = ["clang-runtime"], optional = true }
+
+[features]
+default = ["opencv-camera"]
+opencv-camera = ["opencv"]
