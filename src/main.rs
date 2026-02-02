@@ -9,21 +9,12 @@ use opencv::{
 
 #[cfg(feature = "opencv-camera")]
 fn mat_to_array3(mat: &core::Mat) -> CvResult<Array3<u8>> {
+    let bytes = mat.data_bytes().unwrap().to_vec();
     let rows = mat.rows() as usize;
     let cols = mat.cols() as usize;
     let channels = mat.channels() as usize;
-
-    let mut array = Array3::<u8>::zeros((rows, cols, channels));
-
-    for y in 0..rows {
-        for x in 0..cols {
-            let pixel = mat.at_2d::<core::Vec3b>(y as i32, x as i32)?;
-            array[[y, x, 0]] = pixel[0];
-            array[[y, x, 1]] = pixel[1];
-            array[[y, x, 2]] = pixel[2];
-        }
-    }
-
+    
+    let array = Array3::from_shape_vec((rows, cols, channels), bytes).unwrap();
     Ok(array)
 }
 
@@ -176,32 +167,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nControls: Q - quit, R - reinitialize");
 
     let mut fps_history: Vec<f64> = Vec::with_capacity(32);
-
+    let mut avg_fps = 0.0;
     loop {
+        let start = Instant::now();
         cap.read(&mut frame)?;
         if frame.empty() {
             break;
         }
+        let elapsed = start.elapsed().as_micros();
+        println!("Read frame: {} usec", elapsed);
 
+        let timer = Instant::now();
         let image = mat_to_array3(&frame)?;
+        let elapsed = timer.elapsed().as_micros();
+        println!("mat_to_array3: {} usec", elapsed);
 
         // Track
-        let start = Instant::now();
+        let timer = Instant::now();
         let result = tracker.update(&image)?;
-        let elapsed = start.elapsed().as_secs_f64();
-
-        // Calculate FPS
-        let fps = 1.0 / elapsed;
-        fps_history.push(fps);
-        if fps_history.len() > 30 {
-            fps_history.remove(0);
-        }
-        let avg_fps: f64 = fps_history.iter().sum::<f64>() / fps_history.len() as f64;
+        let elapsed = timer.elapsed().as_micros();
+        println!("tracker.update: {} usec", elapsed);
 
         // Draw result
+        let timer = Instant::now();
         draw_result(&mut frame, &result, avg_fps)?;
+        let elapsed = timer.elapsed().as_micros();
+        println!("draw_result: {} usec", elapsed);
 
+        let timer = Instant::now();
         highgui::imshow("VitTrack Rust", &frame)?;
+        let elapsed = timer.elapsed().as_micros();
+        println!("highgui::imshow: {} usec", elapsed);
 
         let key = highgui::wait_key(1)?;
         if key == 'q' as i32 || key == 27 {
@@ -218,6 +214,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Reinitialized!");
             }
         }
+        let elapsed = start.elapsed().as_secs_f64();
+
+        // Calculate FPS
+        let fps = 1.0 / elapsed;
+        fps_history.push(fps);
+        if fps_history.len() > 30 {
+            fps_history.remove(0);
+        }
+        avg_fps = fps_history.iter().sum::<f64>() / fps_history.len() as f64;
     }
 
     if !fps_history.is_empty() {
