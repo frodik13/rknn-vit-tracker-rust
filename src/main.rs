@@ -1,4 +1,4 @@
-use ndarray::Array3;
+use ndarray::ArrayView3;
 use std::time::Instant;
 use vit_tracker::{BBox, TrackingResult, VitTrack};
 
@@ -8,13 +8,13 @@ use opencv::{
 };
 
 #[cfg(feature = "opencv-camera")]
-fn mat_to_array3(mat: &core::Mat) -> CvResult<Array3<u8>> {
-    let bytes = mat.data_bytes().unwrap().to_vec();
+fn mat_to_array3(mat: &core::Mat) -> CvResult<ArrayView3<u8>> {
+    let bytes = mat.data_bytes().unwrap();
     let rows = mat.rows() as usize;
     let cols = mat.cols() as usize;
     let channels = mat.channels() as usize;
     
-    let array = Array3::from_shape_vec((rows, cols, channels), bytes).unwrap();
+    let array = ArrayView3::from_shape((rows, cols, channels), bytes).unwrap();
     Ok(array)
 }
 
@@ -159,6 +159,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let image = mat_to_array3(&frame)?;
     let bbox = BBox::new(roi.x, roi.y, roi.width, roi.height);
     tracker.init(&image, bbox);
+    let test_result = tracker.update(&image)?;
+    println!("TEST: update on same frame: {:?}", test_result);
 
     println!(
         "Tracker initialized: x={}, y={}, w={}, h={}",

@@ -1,4 +1,4 @@
-use ndarray::Array3;
+use ndarray::{ArrayView3};
 
 use crate::postprocess::{hann2d, process_outputs, TrackingResult};
 use crate::preprocess::{crop_and_preprocess, BBox};
@@ -68,7 +68,7 @@ impl VitTrack {
     /// # Arguments
     /// * `image` - Input image as Array3<u8> in HWC BGR format
     /// * `bbox` - Initial bounding box
-    pub fn init(&mut self, image: &Array3<u8>, bbox: BBox) {
+    pub fn init(&mut self, image: &ArrayView3<u8>, bbox: BBox) {
         self.rect_last = bbox.to_array();
 
         let (template, _crop_size) = crop_and_preprocess(
@@ -82,7 +82,7 @@ impl VitTrack {
     }
 
     /// Initialize tracker with raw bounding box values
-    pub fn init_with_rect(&mut self, image: &Array3<u8>, x: i32, y: i32, w: i32, h: i32) {
+    pub fn init_with_rect(&mut self, image: &ArrayView3<u8>, x: i32, y: i32, w: i32, h: i32) {
         self.init(image, BBox::new(x, y, w, h));
     }
 
@@ -93,7 +93,7 @@ impl VitTrack {
     ///
     /// # Returns
     /// * Tracking result with bounding box and score
-    pub fn update(&mut self, image: &Array3<u8>) -> Result<TrackingResult, RknnError> {
+    pub fn update(&mut self, image: &ArrayView3<u8>) -> Result<TrackingResult, RknnError> {
         let template = match &self.template {
             Some(t) => t,
             None => {
