@@ -160,7 +160,7 @@ fn resize_bilinear(image: &Array3<u8>, new_h: usize, new_w: usize) -> Array3<u8>
 }
 
 /// Preprocess image to NHWC float32 format with ImageNet normalization
-/// Input: BGR HWC uint8
+/// Input: RGB HWC uint8
 /// Output: RGB NHWC float32 normalized (as flat Vec)
 fn preprocess_nhwc(image: &Array3<u8>) -> Vec<f32> {
     let (h, w, c) = image.dim();
@@ -170,7 +170,8 @@ fn preprocess_nhwc(image: &Array3<u8>) -> Vec<f32> {
         for x in 0..w {
             for ch in 0..3 {
                 // BGR to RGB: swap channels 0 and 2
-                let src_ch = 2 - ch;
+                // let src_ch = 2 - ch;
+                let src_ch = ch;
                 let value = image[[y, x, src_ch]] as f32 / 255.0;
                 let normalized = (value - MEAN[ch]) / STD[ch];
                 // NHWC layout: [batch, height, width, channel]
