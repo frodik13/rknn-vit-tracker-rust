@@ -8,7 +8,7 @@ use opencv::{
 };
 
 #[cfg(feature = "opencv-camera")]
-fn mat_to_array3(mat: &core::Mat) -> CvResult<ArrayView3<u8>> {
+fn mat_to_array3(mat: &'_ core::Mat) -> CvResult<ArrayView3<'_, u8>> {
     let bytes = mat.data_bytes().unwrap();
     let rows = mat.rows() as usize;
     let cols = mat.cols() as usize;
@@ -155,8 +155,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("No object selected".into());
     }
 
+    let mut rgb_frame = core::Mat::default();
+    imgproc::cvt_color(&frame, &mut rgb_frame, imgproc::COLOR_BGR2RGB, 0)?;
+
     // Initialize tracker
-    let image = mat_to_array3(&frame)?;
+    let image = mat_to_array3(&rgb_frame)?;
     let bbox = BBox::new(roi.x, roi.y, roi.width, roi.height);
     tracker.init(&image, bbox);
     let test_result = tracker.update(&image)?;
@@ -180,7 +183,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Read frame: {} usec", elapsed);
 
         let timer = Instant::now();
-        let image = mat_to_array3(&frame)?;
+        let mut rgb_frame = core::Mat::default();
+        imgproc::cvt_color(&frame, &mut rgb_frame, imgproc::COLOR_BGR2RGB, 0)?;
+        let image = mat_to_array3(&rgb_frame)?;
         let elapsed = timer.elapsed().as_micros();
         println!("mat_to_array3: {} usec", elapsed);
 
